@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e2230; --line:#2a3040;
+    --text:#e6e9ef; --dim:#8b93a7; --accent:#6366f1; --accent2:#a855f7;
+    --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--text); font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{
+    padding:10px 12px; border-bottom:1px solid var(--line); background:var(--panel);
+    display:flex; align-items:center; gap:10px; flex:0 0 auto;
+  }
+  .logo{
+    width:22px;height:22px;border-radius:6px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+  }
+  header .t{font-weight:600;font-size:13px;flex:1;min-width:0}
+  header .t small{display:block;color:var(--dim);font-weight:400;font-size:11px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--err);flex:0 0 auto;transition:background .3s}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px rgba(34,197,94,.6)}
+  .dot.wait{background:var(--warn)}
+
+  nav{display:flex;gap:2px;padding:8px 12px 0;flex:0 0 auto}
+  nav button{
+    flex:1;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--dim);
+    padding:8px 4px;font-size:12px;font-weight:500;cursor:pointer;border-radius:6px 6px 0 0;
+  }
+  nav button.active{color:var(--text);border-bottom-color:var(--accent);background:var(--panel)}
+  nav button:hover{color:var(--text)}
+
+  main{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .pane{display:none;flex-direction:column;gap:10px}
+  .pane.active{display:flex}
+
+  label{display:block;font-size:11px;color:var(--dim);margin-bottom:4px;font-weight:500}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+  textarea{resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:11px;line-height:1.45}
+  #html{height:110px} #css{height:90px}
+
+  .row{display:flex;gap:8px}
+  .row>*{flex:1;min-width:0}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{
+    display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;user-select:none;
+  }
+  .chip input{accent-color:var(--accent);margin:0}
+  .chip.on{border-color:var(--accent);background:#1c1f33}
+
+  button.primary{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff;
+    padding:11px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  button.primary:disabled{opacity:.45;cursor:not-allowed}
+  button.ghost{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent)}
+
+  details{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:2px 10px}
+  details summary{cursor:pointer;padding:8px 0;font-size:12px;font-weight:500;color:var(--dim);list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:"▸ ";color:var(--accent)}
+  details[open] summary::before{content:"▾ "}
+  details .body{padding:0 0 12px;display:flex;flex-direction:column;gap:10px}
+
+  .hint{font-size:11px;color:var(--dim);line-height:1.5}
+  .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+  .warn{color:var(--warn)}
+  .err{color:var(--err)}
+  .ok{color:var(--ok)}
+
+  #log{
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px;
+    font-family:ui-monospace,Consolas,monospace;font-size:11px;line-height:1.6;
+    max-height:150px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;color:var(--dim);
+  }
+  #log .l-ok{color:var(--ok)} #log .l-err{color:var(--err)} #log .l-warn{color:var(--warn)}
+  #log .l-step{color:var(--text)}
+
+  .bar{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden;display:none}
+  .bar.on{display:block}
+  .bar i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    animation:slide 1.1s ease-in-out infinite}
+  @keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
+
+  .stat{display:flex;gap:6px;flex-wrap:wrap;font-size:11px}
+  .stat span{background:var(--panel2);border-radius:6px;padding:3px 8px;color:var(--dim)}
+  .stat span b{color:var(--text);font-weight:600}
+  .filepick{font-size:11px;color:var(--dim);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"></div>
+  <div class="t">Web → Figma
+    <small id="filestate">движок: проверяю…</small>
+  </div>
+  <div class="dot" id="dot" title="Состояние движка и плагина"></div>
+</header>
+
+<nav>
+  <button data-pane="url" class="active">Сайт</button>
+  <button data-pane="code">Код</button>
+  <button data-pane="bridge">Мост</button>
+</nav>
+
+<main>
+  <!-- ============ URL ============ -->
+  <section class="pane active" id="pane-url">
+    <div>
+      <label>Адрес страницы</label>
+      <input type="text" id="url" placeholder="https://example.com" spellcheck="false">
+    </div>
+    <div>
+      <label>Размеры экрана (можно несколько — получите адаптивные фреймы)</label>
+      <div class="chips" id="widths">
+        <label class="chip on"><input type="checkbox" value="1440" checked>ПК 1440</label>
+        <label class="chip"><input type="checkbox" value="1280">Ноутбук 1280</label>
+        <label class="chip"><input type="checkbox" value="768">Планшет 768</label>
+        <label class="chip"><input type="checkbox" value="390">Мобильный 390</label>
+      </div>
+    </div>
+    <div>
+      <label>Своя ширина</label>
+      <input type="number" id="customWidth" placeholder="например 1920" min="240" max="3840">
+    </div>
+    <button class="primary" id="goUrl">Импортировать в Figma</button>
+    <button class="ghost" id="shot">Проверить: снять скриншот страницы</button>
+  </section>
+
+  <!-- ============ КОД ============ -->
+  <section class="pane" id="pane-code">
+    <div>
+      <label>HTML</label>
+      <textarea id="html" spellcheck="false" placeholder="<div class=&quot;card&quot;>…&lt;/div&gt;"></textarea>
+    </div>
+    <div>
+      <label>CSS</label>
+      <textarea id="css" spellcheck="false" placeholder=".card{display:flex;padding:24px;border-radius:16px}"></textarea>
+    </div>
+    <div>
+      <label>Ширина экрана</label>
+      <input type="number" id="codeWidth" value="1440" min="240" max="3840">
+    </div>
+    <button class="primary" id="goCode">Импортировать код в Figma</button>
+    <div class="hint">Код рендерится локальным движком в настоящем Chrome — со всеми вычисленными
+      стилями, а не «на глаз».</div>
+  </section>
+
+  <!-- ============ МОСТ ============ -->
+  <section class="pane" id="pane-bridge">
+    <div class="hint">
+      Окно плагина держит канал к движку. Пока оно открыто, движок может
+      строить слои у вас на холсте — этим пользуется агент через
+      <code>POST /api/build</code> и <code>/api/capture-and-build</code>,
+      а увидеть результат он может через <code>POST /api/screenshot</code>.
+    </div>
+    <div class="stat" id="bridgestat"></div>
+    <div class="row">
+      <button class="ghost" id="btnState">Состояние файла</button>
+      <button class="ghost" id="btnShotSel">Снимок выделения</button>
+    </div>
+    <button class="primary" id="btnSelfTest">Проверить возможности Figma</button>
+    <div class="hint">
+      Прогоняет на временном фрейме все возможности, которые использует плагин:
+      авто-лейаут, GRID-лейаут, шрифты, диапазоны текста, тени, границы,
+      SVG, картинки, экспорт. Фрейм удаляется сразу после проверки.
+      Если что-то не поддерживается вашей версией Figma — вы это увидите здесь,
+      а плагин при импорте деградирует, а не срывается.
+    </div>
+  </section>
+
+  <div class="bar" id="bar"><i></i></div>
+  <div id="log"></div>
+
+  <details id="settings">
+    <summary>Настройки импорта</summary>
+    <div class="body">
+      <div>
+        <label>Профиль браузера</label>
+        <select id="profile">
+          <option value="clean">Изолированный, каждый раз чистый (по умолчанию)</option>
+          <option value="persistent">Постоянный — логины сохраняются между запусками</option>
+          <option value="system">Ваш реальный профиль Chrome (закрытые страницы)</option>
+        </select>
+      </div>
+      <div>
+        <label>Раскладка</label>
+        <select id="autolayout">
+          <option value="safe">Умная: авто-лейаут, где он воспроизводит раскладку точно</option>
+          <option value="off">Всегда абсолютные координаты (пиксель-в-пиксель)</option>
+          <option value="aggressive">Агрессивная: авто-лейаут везде, где возможно</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="chip" title="Высота текстовых слоёв подстраивается под содержимое">
+          <input type="checkbox" id="textAutoHeight" checked>Автовысота текста
+        </label>
+        <label class="chip on" title="Подсказки из alt, aria-label, placeholder">
+          <input type="checkbox" id="annotations" checked>Описания слоёв
+        </label>
+      </div>
+      <div class="row">
+        <label class="chip on" title="CSS-селектор и источник в данных слоя">
+          <input type="checkbox" id="pluginData" checked>Трассировка к коду
+        </label>
+        <label class="chip on">
+          <input type="checkbox" id="scrollLoad" checked>Догружать ленивые картинки
+        </label>
+      </div>
+      <div class="hint">Масштаб теней: <span id="shadowVal">как в CSS</span>.
+        Figma визуально расширяет тень сильнее, чем CSS — если тени кажутся крупнее,
+        переключите на половину.</div>
+      <button class="ghost" id="shadowToggle">Переключить масштаб теней</button>
+    </div>
+  </details>
+</main>
+
+<script>
+'use strict';
+
+// Адрес движка. В Figma параметров нет — берётся порт по умолчанию.
+// Параметр ?engine=… нужен для отладки и смены порта.
+const ENGINE = new URLSearchParams(location.search).get('engine') || 'http://127.0.0.1:7331';
+const logEl = document.getElementById('log');
+const dot = document.getElementById('dot');
+const bar = document.getElementById('bar');
+const fileState = document.getElementById('filestate');
+
+let shadowScale = 1;
+let engineOk = false;
+let wsOk = false;
+let busy = false;
+
+function log(text, kind) {
+  const cls = kind ? ' class="l-' + kind + '"' : '';
+  logEl.innerHTML += '<div' + cls + '>' + String(text).replace(/[<>&]/g, (c) =>
+    ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog() { logEl.innerHTML = ''; }
+function setBusy(v) { busy = v; bar.classList.toggle('on', v); updateButtons(); }
+function updateButtons() {
+  for (const id of ['goUrl', 'goCode']) {
+    document.getElementById(id).disabled = busy || !engineOk;
+  }
+}
+function refreshDot() {
+  dot.className = 'dot' + (engineOk && wsOk ? ' on' : engineOk ? ' wait' : '');
+  dot.title = 'Движок: ' + (engineOk ? 'работает' : 'нет связи') +
+    ' · Плагин: ' + (wsOk ? 'подключён' : 'нет связи');
+}
+
+/* ---------------- связь с движком ---------------- */
+
+async function api(pathname, options) {
+  const res = await fetch(ENGINE + pathname, options);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.ok === false) throw new Error(body.error || ('HTTP ' + res.status));
+  return body;
+}
+
+async function pingEngine() {
+  try {
+    const h = await api('/health');
+    engineOk = true;
+    fileState.textContent = 'движок работает';
+  } catch (e) {
+    engineOk = false;
+    fileState.textContent = 'движок не запущен — запустите start-engine.cmd';
+  }
+  refreshDot();
+  updateButtons();
+}
+
+/* ---------------- WebSocket-мост ---------------- */
+
+const pendingBridge = new Map();
+let ws = null;
+let reconnectTimer = null;
+
+function connectBridge() {
+  try { ws = new WebSocket(ENGINE.replace('http', 'ws') + '/ws'); }
+  catch (e) { scheduleReconnect(); return; }
+
+  ws.onopen = () => {
+    wsOk = true;
+    refreshDot();
+    log('Мост: соединение с движком установлено', 'ok');
+    post({ type: 'state', requestId: 'hello-state' });
+  };
+  ws.onclose = () => {
+    wsOk = false;
+    refreshDot();
+    scheduleReconnect();
+  };
+  ws.onerror = () => { wsOk = false; refreshDot(); };
+  ws.onmessage = async (ev) => {
+    let msg;
+    try { msg = JSON.parse(ev.data); } catch (e) { return; }
+    await handleBridgeCommand(msg);
+  };
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  reconnectTimer = setTimeout(() => { reconnectTimer = null; connectBridge(); }, 3000);
+}
+
+function post(msg) { window.parent.postMessage({ pluginMessage: msg }, '*'); }
+
+function bridgeReply(requestId, ok, result, error) {
+  if (!ws || ws.readyState !== 1) return;
+  ws.send(JSON.stringify({ type: 'result', requestId, ok, result, error }));
+}
+
+/** Собрать ссылки на картинки из IR: ключ → URL, откуда взять байты. */
+function collectImageRefs(ir) {
+  const refs = [];
+  const assetById = new Map((ir.assets || []).map((a) => [a.id, a]));
+  (function walk(node) {
+    for (const key of ['src', 'bgSrc']) {
+      const ref = node[key];
+      if (!ref) continue;
+      if (assetById.has(ref)) {
+        refs.push({ key: ref, url: assetById.get(ref).absoluteUrl || ENGINE + assetById.get(ref).url });
+      } else if (/^(https?:)?\/\//.test(ref)) {
+        refs.push({ key: ref, url: ENGINE + '/proxy?url=' + encodeURIComponent(ref) });
+      }
+    }
+    for (const c of node.children || []) walk(c);
+  })(ir.root || ir);
+  return refs;
+}
+
+/** Забрать картинки и отдать их плагину порциями. */
+async function sendAssets(ir, onProgress) {
+  const refs = collectImageRefs(ir);
+  if (!refs.length) return { total: 0, ok: 0 };
+  let ok = 0;
+  const CHUNK = 4;
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const slice = refs.slice(i, i + CHUNK);
+    const assets = [];
+    await Promise.all(slice.map(async (r) => {
+      try {
+        const res = await fetch(r.url);
+        if (!res.ok) return;
+        const buf = new Uint8Array(await res.arrayBuffer());
+        if (!buf.length) return;
+        assets.push({ id: r.key, bytes: buf });
+        ok++;
+      } catch (e) { /* картинка недоступна — плагин это отметит */ }
+    }));
+    if (assets.length) post({ type: 'asset-chunk', assets });
+    if (onProgress) onProgress(Math.min(i + CHUNK, refs.length), refs.length);
+  }
+  return { total: refs.length, ok };
+}
+
+function buildOptions(offset) {
+  return {
+    autoLayout: document.getElementById('autolayout').value,
+    textAutoHeight: document.getElementById('textAutoHeight').checked,
+    addAnnotations: document.getElementById('annotations').checked,
+    addPluginData: document.getElementById('pluginData').checked,
+    shadowBlurScale: shadowScale,
+    offset: offset || 0,
+  };
+}
+
+/* ---------------- ответы от плагина ---------------- */
+
+const waiters = new Map();
+/** Идентификатор запроса, пришедшего от движка — чтобы пересылать прогресс. */
+let currentBridgeRequestId = null;
+
+window.onmessage = (ev) => {
+  const msg = ev.data && ev.data.pluginMessage;
+  if (!msg) return;
+  if (msg.type === 'progress') {
+    // Пересылаем прогресс движку, иначе долгая сборка выглядит как зависание
+    if (currentBridgeRequestId && ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'progress', requestId: currentBridgeRequestId,
+        phase: msg.phase, done: msg.done, total: msg.total,
+      }));
+    }
+    if (msg.phase === 'build' && msg.total > 1) {
+      log('   собрано слоёв ' + msg.done + ' из ' + msg.total);
+    }
+    return;
+  }
+  if (msg.type === 'asset-chunk-ack') return;
+
+  if (msg.type === 'done') {
+    const w = waiters.get(msg.requestId);
+    if (w) { waiters.delete(msg.requestId); w.resolve(msg); }
+    else reportDone(msg);
+  }
+  if (msg.type === 'error') {
+    const w = waiters.get(msg.requestId);
+    if (w) { waiters.delete(msg.requestId); w.reject(new Error(msg.message)); }
+    else log('Ошибка плагина: ' + msg.message, 'err');
+  }
+  if (msg.type === 'export-png-result') {
+    const w = waiters.get(msg.requestId);
+    if (w) { waiters.delete(msg.requestId); msg.error ? w.reject(new Error(msg.error)) : w.resolve(msg); }
+  }
+  if (msg.type === 'state-result') {
+    const w = waiters.get(msg.requestId);
+    if (w) { waiters.delete(msg.requestId); w.resolve(msg); }
+    else renderState(msg);
+  }
+  if (msg.type === 'delete-result') {
+    const w = waiters.get(msg.requestId);
+    if (w) {
+      waiters.delete(msg.requestId);
+      if (msg.error) w.reject(new Error(msg.error));
+      else w.resolve(msg);
+    }
+  }
+  if (msg.type === 'select-result') {
+    const w = waiters.get(msg.requestId);
+    if (w) {
+      waiters.delete(msg.requestId);
+      if (msg.error) w.reject(new Error(msg.error));
+      else w.resolve(msg);
+    }
+  }
+  if (msg.type === 'selftest-result') {
+    const w = waiters.get(msg.requestId);
+    if (w) {
+      waiters.delete(msg.requestId);
+      if (msg.error) w.reject(new Error(msg.error));
+      else w.resolve(msg);
+    } else if (msg.error) {
+      log('Проверка не удалась: ' + msg.error, 'err');
+    }
+  }
+};
+
+function askPlugin(msg, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const requestId = msg.requestId || ('req_' + Math.random().toString(36).slice(2, 10));
+    const timer = setTimeout(() => {
+      waiters.delete(requestId);
+      reject(new Error('Плагин не ответил вовремя'));
+    }, timeoutMs || 240000);
+    waiters.set(requestId, {
+      resolve: (v) => { clearTimeout(timer); resolve(v); },
+      reject: (e) => { clearTimeout(timer); reject(e); },
+    });
+    post(Object.assign({}, msg, { requestId }));
+  });
+}
+
+function reportDone(msg) {
+  const r = msg.report || {};
+  const s = r.stats || {};
+  const total = (s.frames || 0) + (s.texts || 0) + (s.images || 0) + (s.svgs || 0);
+  const autoTotal = (s.autoLayout || 0) + (s.absolute || 0);
+  const pct = autoTotal ? Math.round((100 * (s.autoLayout || 0)) / autoTotal) : 0;
+  log('Готово: «' + msg.name + '» за ' + msg.ms + ' мс', 'ok');
+  log('   слоёв ' + total + ' · фреймов ' + (s.frames || 0) + ' · текстов ' + (s.texts || 0) +
+      ' · картинок ' + (s.images || 0) + ' · SVG ' + (s.svgs || 0));
+  log('   авто-лейаут: ' + pct + '% контейнеров (редактируемая раскладка)');
+  if (r.fonts) log('   шрифтов загружено ' + r.fonts.loaded + '/' + r.fonts.requested);
+  if (r.missingImages) log('   картинок не найдено: ' + r.missingImages, 'warn');
+  if (r.missingFonts && r.missingFonts.length) {
+    log('   шрифты не найдены: ' + r.missingFonts.slice(0, 6).join(', '), 'warn');
+  }
+  for (const w of r.warnings || []) log('   ' + w, 'warn');
+  if (r.autoReasons && r.autoReasons.length) {
+    log('   почему не авто-лейаут: ' + r.autoReasons.slice(0, 5).map(([k, v]) => k + ' ×' + v).join('; '));
+  }
+}
+
+function renderState(msg) {
+  fileState.textContent = 'файл: ' + (msg.fileName || '—') + ' · ' + (msg.pageName || '');
+  document.getElementById('bridgestat').innerHTML =
+    '<span>Версия плагина <b>' + (msg.version || '?') + '</b></span>' +
+    '<span>Файл <b>' + escapeHtml(msg.fileName || '—') + '</b></span>' +
+    '<span>Страница <b>' + escapeHtml(msg.pageName || '—') + '</b></span>' +
+    '<span>Выделено <b>' + (msg.selection || []).length + '</b></span>';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+}
+
+/** Показать отчёт самопроверки возможностей Figma. */
+function renderSelfTest(report) {
+  log('Проверка возможностей Figma: ' + (report.total - report.failed) + ' из ' + report.total + ' работают',
+    report.failed ? 'warn' : 'ok');
+  for (const r of report.results) {
+    log(`   ${r.ok ? '✓' : '✗'} ${r.name}${r.detail ? ' — ' + r.detail : ''}`, r.ok ? null : 'err');
+  }
+  if (report.failed) {
+    log('   Не работающее плагин обойдёт: авто-лейаут станет абсолютным, ' +
+        'GRID — абсолютным, SVG — прямоугольником. Импорт не сорвётся.', 'warn');
+  }
+  for (const r of report.results) {
+    if (r.name.indexOf('версия') !== -1) log('   ' + r.detail);
+  }
+}
+
+/* ---------------- команды от движка (агент) ---------------- */
+
+async function handleBridgeCommand(msg) {
+  if (!msg || !msg.cmd) return;
+  const requestId = msg.requestId;
+  currentBridgeRequestId = requestId;
+  log('Мост: команда «' + msg.cmd + '» от движка', 'step');
+  try {
+    if (msg.cmd === 'build') {
+      await sendAssets(msg.ir, (d, t) => log('   картинки ' + d + '/' + t));
+      const done = await askPlugin({ type: 'import', ir: msg.ir, options: msg.options });
+      reportDone(done);
+      bridgeReply(requestId, true, { nodeId: done.nodeId, name: done.name, ms: done.ms, report: done.report });
+      return;
+    }
+    if (msg.cmd === 'build-with-assets') {
+      const raw = msg.assets || [];
+      log('Мост: получено картинок ' + raw.length);
+      const assets = raw.map((a) => {
+        if (a.base64) {
+          const bin = atob(a.base64);
+          const u8 = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+          return { id: a.id, bytes: u8 };
+        }
+        return { id: a.id, bytes: new Uint8Array(a.bytes || []) };
+      });
+      for (let i = 0; i < assets.length; i += 4) post({ type: 'asset-chunk', assets: assets.slice(i, i + 4) });
+      await sendAssets(msg.ir);
+      const done = await askPlugin({ type: 'import', ir: msg.ir, options: msg.options });
+      reportDone(done);
+      bridgeReply(requestId, true, { nodeId: done.nodeId, name: done.name, ms: done.ms, report: done.report });
+      return;
+    }
+    if (msg.cmd === 'export') {
+      const res = await askPlugin({ type: 'export-png', nodeIds: msg.nodeIds || [], scale: msg.scale || 1 }, 180000);
+      bridgeReply(requestId, true, { images: res.images || [] });
+      return;
+    }
+    if (msg.cmd === 'design-system') {
+      const res = await askPlugin({ type: 'design-system', theme: msg.theme || 'Light' }, 900000);
+      const rep = (res && res.report) || {};
+      log('Мост: дизайн-система — переменных ' + (rep.variables || 0) +
+          ', компонентов ' + (rep.components || 0) +
+          (rep.failed && rep.failed.length ? ', не вышли иконки: ' + rep.failed.join(', ') : ''), 'ok');
+      bridgeReply(requestId, true, res);
+      return;
+    }
+    if (msg.cmd === 'state') {
+      const res = await askPlugin({ type: 'state' }, 15000);
+      bridgeReply(requestId, true, res);
+      return;
+    }
+    if (msg.cmd === 'delete') {
+      const res = await askPlugin({ type: 'delete', nodeIds: msg.nodeIds || [] }, 120000);
+      log('Мост: удалено слоёв ' + ((res.removed || []).length), 'ok');
+      bridgeReply(requestId, true, res);
+      return;
+    }
+    if (msg.cmd === 'select') {
+      const res = await askPlugin({ type: 'select', nodeIds: msg.nodeIds || [] }, 30000);
+      bridgeReply(requestId, true, res);
+      return;
+    }
+    if (msg.cmd === 'selftest') {
+      const res = await askPlugin({ type: 'selftest' }, 120000);
+      bridgeReply(requestId, true, res.report || res);
+      return;
+    }
+    bridgeReply(requestId, false, null, 'Неизвестная команда: ' + msg.cmd);
+  } catch (e) {
+    log('Мост: ошибка — ' + (e.message || e), 'err');
+    bridgeReply(requestId, false, null, String(e.message || e));
+  } finally {
+    currentBridgeRequestId = null;
+  }
+}
+
+/* ---------------- импорт ---------------- */
+
+async function importOne(ir, offset, label) {
+  log('Отправляю ассеты…');
+  const stats = await sendAssets(ir, (d, t) => log('   картинки ' + d + '/' + t));
+  if (stats.total) log('   скачано ' + stats.ok + ' из ' + stats.total, stats.ok === stats.total ? null : 'warn');
+  log('Строю слои: ' + label);
+  const done = await askPlugin({ type: 'import', ir, options: buildOptions(offset) });
+  reportDone(done);
+  return done;
+}
+
+async function runUrlImport() {
+  const url = document.getElementById('url').value.trim();
+  if (!url) { log('Укажите адрес страницы', 'err'); return; }
+  const widths = Array.from(document.querySelectorAll('#widths input:checked')).map((i) => parseInt(i.value, 10));
+  const custom = parseInt(document.getElementById('customWidth').value, 10);
+  if (custom >= 240) widths.push(custom);
+  if (!widths.length) { log('Выберите хотя бы один размер экрана', 'err'); return; }
+
+  clearLog();
+  setBusy(true);
+  try {
+    let offset = 0;
+    for (const width of widths) {
+      log('Захват ' + url + ' @ ' + width + 'px…', 'step');
+      const res = await api('/api/capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url, width,
+          profileMode: document.getElementById('profile').value,
+          scrollToLoad: document.getElementById('scrollLoad').checked,
+        }),
+      });
+      log('   захвачено за ' + res.ms + ' мс, слоёв ' + (res.ir.stats.emitted || '?') +
+          ', ассетов ' + (res.ir.assets || []).length);
+      if (res.validation && res.validation.errors) {
+        log('   предупреждение: проблем в разборе ' + res.validation.errors, 'warn');
+      }
+      for (const w of (res.ir.warnings || []).slice(0, 4)) log('   ' + w, 'warn');
+      await importOne(res.ir, offset, width + 'px');
+      offset += (res.ir.content ? res.ir.content.w : width) + 80;
+    }
+    log('Импорт завершён', 'ok');
+  } catch (e) {
+    log('Ошибка: ' + (e.message || e), 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function runCodeImport() {
+  const html = document.getElementById('html').value;
+  const css = document.getElementById('css').value;
+  if (!html.trim() && !css.trim()) { log('Вставьте HTML или CSS', 'err'); return; }
+  clearLog();
+  setBusy(true);
+  try {
+    const width = parseInt(document.getElementById('codeWidth').value, 10) || 1440;
+    log('Рендер кода в Chrome @ ' + width + 'px…', 'step');
+    const res = await api('/api/capture-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, css, width }),
+    });
+    log('   захвачено за ' + res.ms + ' мс, слоёв ' + (res.ir.stats.emitted || '?'));
+    if (res.validation && res.validation.errors) {
+      log('   проблем в разборе: ' + res.validation.errors, 'warn');
+    }
+    await importOne(res.ir, 0, width + 'px');
+    log('Импорт завершён', 'ok');
+  } catch (e) {
+    log('Ошибка: ' + (e.message || e), 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* ---------------- UI ---------------- */
+
+document.querySelectorAll('nav button').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach((x) => x.classList.remove('active'));
+    document.querySelectorAll('.pane').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('pane-' + b.dataset.pane).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.chip input').forEach((inp) => {
+  inp.addEventListener('change', () => inp.closest('.chip').classList.toggle('on', inp.checked));
+});
+
+document.getElementById('goUrl').addEventListener('click', runUrlImport);
+document.getElementById('goCode').addEventListener('click', runCodeImport);
+
+document.getElementById('shot').addEventListener('click', async () => {
+  const url = document.getElementById('url').value.trim();
+  if (!url) { log('Укажите адрес страницы', 'err'); return; }
+  clearLog(); setBusy(true);
+  try {
+    log('Снимаю скриншот ' + url + '…', 'step');
+    const res = await api('/api/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, width: 1440, fetchAssets: false, screenshot: true }),
+    });
+    log('IR готов, слоёв ' + (res.ir.stats.emitted || '?'), 'ok');
+    if (res.screenshotFile) log('Скриншот страницы: ' + res.screenshotFile, 'ok');
+  } catch (e) { log('Ошибка: ' + (e.message || e), 'err'); }
+  finally { setBusy(false); }
+});
+
+document.getElementById('shadowToggle').addEventListener('click', () => {
+  shadowScale = shadowScale === 1 ? 0.5 : 1;
+  document.getElementById('shadowVal').textContent = shadowScale === 1 ? 'как в CSS' : 'половина';
+});
+
+document.getElementById('btnSelfTest').addEventListener('click', async () => {
+  clearLog();
+  log('Проверяю, что умеет ваша Figma…', 'step');
+  try {
+    const res = await askPlugin({ type: 'selftest' }, 120000);
+    renderSelfTest(res.report);
+  } catch (e) {
+    log('Проверка не удалась: ' + (e.message || e), 'err');
+  }
+});
+
+document.getElementById('btnState').addEventListener('click', async () => {
+  try { renderState(await askPlugin({ type: 'state' }, 10000)); }
+  catch (e) { log('Ошибка: ' + (e.message || e), 'err'); }
+});
+
+document.getElementById('btnShotSel').addEventListener('click', async () => {
+  clearLog();
+  try {
+    const st = await askPlugin({ type: 'state' }, 10000);
+    const ids = (st.selection || []).map((s) => s.id);
+    if (!ids.length) { log('Ничего не выделено в Figma', 'warn'); return; }
+    log('Выделено слоёв: ' + ids.length, 'step');
+    const res = await askPlugin({ type: 'export-png', nodeIds: ids, scale: 2 }, 120000);
+    log('Экспортировано изображений: ' + (res.images || []).length, 'ok');
+  } catch (e) { log('Ошибка: ' + (e.message || e), 'err'); }
+});
+
+/* ---------------- старт ---------------- */
+
+log('Плагин запущен. Движок: ' + ENGINE);
+pingEngine();
+setInterval(pingEngine, 5000);
+connectBridge();
+</script>
+</body>
+</html>

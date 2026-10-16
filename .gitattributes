@@ -1,0 +1,24 @@
+# Нормализация переводов строк.
+# Важно: .cmd-файлы обязаны быть в CRLF и в чистом ASCII — иначе Windows
+# отвечает "The syntax of the command is incorrect". Фиксируем это в git,
+# чтобы клон не сломал запускалки.
+*.cmd           text eol=crlf
+*.bat           text eol=crlf
+*.ps1           text eol=crlf
+
+# Скрипты движка и тестов — обычный LF.
+*.js            text eol=lf
+*.json          text eol=lf
+*.html          text eol=lf
+*.py            text eol=lf
+*.md            text eol=lf
+
+# Бинарное не трогаем.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.webp          binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary

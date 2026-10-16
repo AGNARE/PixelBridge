@@ -1,0 +1,29 @@
+{
+  "name": "pixelbridge",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Безлимитный плагин Figma: переносит веб-страницы и HTML/CSS в редактируемые слои, плюс локальный мост и скиллы, чтобы дизайн в ваш холст строил ИИ-агент.",
+  "main": "code.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node engine/server.js",
+    "test": "node test/smoke-browser.js && node test/test-serialize.js && node test/test-converter.js && node test/test-code-and-agent.js && node test/test-image-normalize.js && node test/test-grid-unsupported.js && node test/test-server.js && node test/test-ui.js && node test/test-visual.js",
+    "test:big": "node test/test-converter-big.js https://tailwindcss.com/ 1440",
+    "test:visual": "node test/test-visual.js",
+    "test:ui": "node test/test-ui.js",
+    "test:code": "node test/test-code-and-agent.js",
+    "test:images": "node test/test-image-normalize.js",
+    "profile": "node test/profile-build.js"
+  },
+  "keywords": [
+    "figma",
+    "figma-plugin",
+    "html-to-figma",
+    "website-to-figma",
+    "chrome-devtools-protocol",
+    "design-agent"
+  ],
+  "license": "MIT"
+}

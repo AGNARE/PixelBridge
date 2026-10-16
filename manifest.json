@@ -1,0 +1,13 @@
+{
+  "name": "Web → Figma Bridge",
+  "id": "web-to-figma-bridge-local-dev",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "Локальный движок захвата на 127.0.0.1:7331 (WebSocket-мост) и загрузка изображений с захваченных страниц."
+  }
+}
